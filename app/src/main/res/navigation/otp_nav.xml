@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/otp_nav"
+    app:startDestination="@id/inputPhoneFragment">
+
+    <fragment
+        android:id="@+id/inputPhoneFragment"
+        android:name="com.motict.app.otp.InputPhoneFragment"
+        android:label="fragment_input_phone"
+        tools:layout="@layout/fragment_input_phone" >
+        <action
+            android:id="@+id/action_inputPhoneFragment_to_otpAuthenticatorFragment"
+            app:destination="@id/otpAuthenticatorFragment"
+            app:enterAnim="@android:anim/fade_in"
+            app:exitAnim="@android:anim/fade_out"
+            app:launchSingleTop="false"
+            app:popEnterAnim="@android:anim/fade_in"
+            app:popExitAnim="@android:anim/fade_out"
+            app:popUpTo="@id/inputPhoneFragment"
+            app:popUpToInclusive="false" />
+    </fragment>
+    <fragment
+        android:id="@+id/otpAuthenticatedFragment"
+        android:name="com.motict.app.otp.OtpAuthenticatedFragment"
+        android:label="fragment_otp_authenticated"
+        tools:layout="@layout/fragment_otp_authenticated" />
+    <fragment
+        android:id="@+id/otpAuthenticatorFragment"
+        android:name="com.motict.app.otp.OtpAuthenticatorFragment"
+        android:label="fragment_otp_authenticator"
+        tools:layout="@layout/fragment_otp_authenticator" >
+        <action
+            android:id="@+id/action_otpAuthenticatorFragment_to_otpAuthenticatedFragment"
+            app:destination="@id/otpAuthenticatedFragment"
+            app:enterAnim="@android:anim/fade_in"
+            app:exitAnim="@android:anim/fade_out"
+            app:launchSingleTop="false"
+            app:popEnterAnim="@android:anim/fade_in"
+            app:popExitAnim="@android:anim/fade_out"
+            app:popUpTo="@id/otpAuthenticatorFragment"
+            app:popUpToInclusive="false" />
+    </fragment>
+</navigation>
