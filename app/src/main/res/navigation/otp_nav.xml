@@ -39,7 +39,7 @@
             app:launchSingleTop="false"
             app:popEnterAnim="@android:anim/fade_in"
             app:popExitAnim="@android:anim/fade_out"
-            app:popUpTo="@id/otpAuthenticatorFragment"
-            app:popUpToInclusive="false" />
+            app:popUpTo="@id/inputPhoneFragment"
+            app:popUpToInclusive="true" />
     </fragment>
 </navigation>

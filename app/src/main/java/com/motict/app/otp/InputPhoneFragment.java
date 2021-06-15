@@ -59,7 +59,7 @@ public class InputPhoneFragment extends Fragment {
     }
 
     private void initViewListener() {
-        btnCancel.setOnClickListener(view -> navController.popBackStack());
+        btnCancel.setOnClickListener(view -> requireActivity().finish());
         btnNext.setOnClickListener(view -> {
             if (TextUtils.isEmpty(edtPhone.getText())) {
                 Toast.makeText(getContext(), "Please enter your phone number", Toast.LENGTH_SHORT).show();

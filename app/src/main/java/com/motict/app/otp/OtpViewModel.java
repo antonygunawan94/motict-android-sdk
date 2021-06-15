@@ -102,6 +102,13 @@ public class OtpViewModel extends ViewModel {
         }
     }
 
+    public void reset() {
+        isRequestingMissedCallOTP.postValue(false);
+        exception.postValue(null);
+        missedCallOTPResponse.postValue(null);
+        isAuthenticationSuccessful.postValue(false);
+    }
+
 
     public MotictSDK getSdk() {
         return sdk;

@@ -67,7 +67,10 @@ public class OtpAuthenticatorFragment extends Fragment {
             otpViewModel.verifyMissedCallOTP(edtPinCode.getText().toString());
         });
 
-        btnCancel.setOnClickListener(view -> navController.popBackStack());
+        btnCancel.setOnClickListener(view -> {
+            otpViewModel.reset();
+            navController.navigateUp();
+        });
 
         otpViewModel.getSdk().addOtpMissedCallReceivedCallback((fullPhoneNumber, tokenFourDigit, tokenSixDigit) -> {
 //            edtPinCode.setText(fullPhoneNumber);
