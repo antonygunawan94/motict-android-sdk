@@ -47,7 +47,6 @@ public class MotictMissedCallVerifier implements RequestMissedCallOTPCallback {
                                      List<MissedCallVerificationSucceedListener> missedCallVerificationSucceedListeners,
                                      List<MissedCallVerificationFailedListener> missedCallVerificationFailedListeners) {
 
-
         this.context = context;
         this.missedCallVerificationStartedListeners = missedCallVerificationStartedListeners;
         this.missedCallVerificationReceivedListeners = missedCallVerificationReceivedListeners;
@@ -61,7 +60,7 @@ public class MotictMissedCallVerifier implements RequestMissedCallOTPCallback {
         if (isAirplaneModeOn(context)) throw new AirplaneModeActiveException();
 
         checkNecessaryPermissions();
-        
+
 
         requestMissedCallOTPApi.execute(phoneNumber);
 

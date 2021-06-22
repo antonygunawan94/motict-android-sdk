@@ -11,6 +11,7 @@ import androidx.lifecycle.ViewModelProvider;
 import com.motict.app.R;
 import com.motict.app.otp.OtpViewModel;
 import com.motict.sdk.MotictMissedCallVerifier;
+import com.motict.sdk.exception.RequiredPermissionDeniedException;
 
 import java.util.List;
 
@@ -55,10 +56,15 @@ public class ExampleOneActivity extends AppCompatActivity {
                                 .show())
                 )
                 .addMissedCallVerificationFailedListener(failed ->
-                        runOnUiThread(() -> Toast.makeText(this,
-                                String.format("Missed Call Verification Failed: %s",
-                                        failed.toString()), Toast.LENGTH_SHORT)
-                                .show())
+                        runOnUiThread(() -> {
+                            if (failed instanceof RequiredPermissionDeniedException)
+                                return;
+
+                            Toast.makeText(this,
+                                    String.format("Missed Call Verification Failed: %s",
+                                            failed.toString()), Toast.LENGTH_SHORT)
+                                    .show();
+                        })
                 )
                 .build();
 

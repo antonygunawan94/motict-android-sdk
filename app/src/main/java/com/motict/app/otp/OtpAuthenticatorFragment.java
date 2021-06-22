@@ -2,7 +2,6 @@ package com.motict.app.otp;
 
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,6 +17,7 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
 
 import com.motict.app.R;
+import com.motict.sdk.exception.RequiredPermissionDeniedException;
 
 import br.com.simplepass.loadingbutton.customViews.CircularProgressButton;
 
@@ -73,7 +73,6 @@ public class OtpAuthenticatorFragment extends Fragment {
         requireActivity().getOnBackPressedDispatcher().addCallback(requireActivity(), new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
-                Log.d("hello", "world");
                 otpViewModel.reset();
                 Navigation.findNavController(requireActivity(), R.id.fragmentContainer).navigateUp();
             }
@@ -91,7 +90,7 @@ public class OtpAuthenticatorFragment extends Fragment {
                         .navigate(R.id.action_otpAuthenticatorFragment_to_otpAuthenticatedFragment);
         });
         otpViewModel.exception().observe(requireActivity(), error -> {
-            if (error != null)
+            if (error != null && !(error instanceof RequiredPermissionDeniedException))
                 Toast.makeText(requireActivity(), error.toString(), Toast.LENGTH_SHORT).show();
         });
     }
