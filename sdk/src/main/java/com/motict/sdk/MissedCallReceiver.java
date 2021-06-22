@@ -95,8 +95,10 @@ class MissedCallReceiver extends BroadcastReceiver {
             switch (state) {
                 case TelephonyManager.CALL_STATE_RINGING:
                     handlePhoneStateRinging(phoneNumber);
+                    break;
                 case TelephonyManager.CALL_STATE_IDLE:
                     handlePhoneStateIdle();
+                    break;
                 case TelephonyManager.CALL_STATE_OFFHOOK:
                     break;
             }
