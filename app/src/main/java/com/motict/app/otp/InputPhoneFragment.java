@@ -13,7 +13,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 
 import com.motict.app.R;
@@ -23,8 +22,6 @@ import com.motict.sdk.exception.RequiredPermissionDeniedException;
 import br.com.simplepass.loadingbutton.customViews.CircularProgressButton;
 
 public class InputPhoneFragment extends Fragment {
-    private NavController navController;
-
     private EditText edtPhone;
     private Button btnCancel;
     private CircularProgressButton btnNext;
@@ -51,8 +48,6 @@ public class InputPhoneFragment extends Fragment {
 
 
     private void initView(View view) {
-        navController = Navigation.findNavController(view);
-
         edtPhone = view.findViewById(R.id.edtPhone);
         btnCancel = view.findViewById(R.id.btnCancel);
         btnNext = view.findViewById(R.id.btnNext);
@@ -66,24 +61,26 @@ public class InputPhoneFragment extends Fragment {
                 return;
             }
 
-            otpViewModel.requestMissedCallOTP(edtPhone.getText().toString());
+            otpViewModel.startVerification(edtPhone.getText().toString());
         });
     }
 
 
     private void initOtpListener() {
-        otpViewModel.isRequestingMissedCallOTP().observe(requireActivity(), isRequesting -> {
+        otpViewModel.isVerificationStartedLoading().observe(requireActivity(), isRequesting -> {
             if (isRequesting) showLoading();
             else hideLoading();
         });
 
 
-        otpViewModel.missedCallOTPResponse().observe(requireActivity(),
-                missedCallOTPResponse -> {
-                    if (missedCallOTPResponse != null)
-                        navController.navigate(R.id.action_inputPhoneFragment_to_otpAuthenticatorFragment);
+        otpViewModel.isVerificationStarted().observe(requireActivity(),
+                isStarted -> {
+                    if (isStarted)
+                        Navigation.findNavController(requireActivity(), R.id.fragmentContainer)
+                                .navigate(R.id.action_inputPhoneFragment_to_otpAuthenticatorFragment);
                 }
         );
+
         otpViewModel.exception().observe(requireActivity(),
                 exception -> {
                     if (exception != null) {

@@ -31,7 +31,7 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.1.0'
     implementation 'com.google.android.material:material:1.1.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.0.1'
-//    implementation project(path: ':sdk')
+    implementation project(path: ':sdk')
 
     implementation 'androidx.navigation:navigation-fragment:2.3.0'
     implementation 'androidx.navigation:navigation-ui:2.3.0'
@@ -48,7 +48,7 @@ dependencies {
     implementation "androidx.lifecycle:lifecycle-livedata:$lifecycle_version"
     implementation "androidx.lifecycle:lifecycle-common-java8:$lifecycle_version"
 
-    implementation 'com.github.antonygunawan94:motict-android-sdk:0.1.0'
+//    implementation 'com.github.antonygunawan94:motict-android-sdk:0.1.0'
 
 
     implementation 'br.com.simplepass:loading-button-android:2.2.0'

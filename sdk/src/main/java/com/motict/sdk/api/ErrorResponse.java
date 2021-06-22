@@ -1,8 +1,8 @@
-package com.motict.sdk.model;
+package com.motict.sdk.api;
 
 import com.google.gson.annotations.SerializedName;
 
-public class ErrorResponse {
+class ErrorResponse {
     @SerializedName("error_code")
     private int errorCode;
 

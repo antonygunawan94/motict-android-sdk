@@ -2,6 +2,7 @@ package com.motict.app.otp;
 
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -9,11 +10,11 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 
 import com.motict.app.R;
@@ -22,8 +23,6 @@ import br.com.simplepass.loadingbutton.customViews.CircularProgressButton;
 
 
 public class OtpAuthenticatorFragment extends Fragment {
-    private NavController navController;
-
     private EditText edtPinCode;
 
     private CircularProgressButton btnNext;
@@ -50,8 +49,6 @@ public class OtpAuthenticatorFragment extends Fragment {
     }
 
     private void initView(View view) {
-        navController = Navigation.findNavController(view);
-
         edtPinCode = view.findViewById(R.id.edtPinCode);
         btnNext = view.findViewById(R.id.btnNext);
         btnCancel = view.findViewById(R.id.btnCancel);
@@ -64,25 +61,34 @@ public class OtpAuthenticatorFragment extends Fragment {
                 return;
             }
 
-            otpViewModel.verifyMissedCallOTP(edtPinCode.getText().toString());
+            otpViewModel.verifyPinCode(edtPinCode.getText().toString());
         });
 
         btnCancel.setOnClickListener(view -> {
             otpViewModel.reset();
-            navController.navigateUp();
+            Navigation.findNavController(requireActivity(), R.id.fragmentContainer).navigateUp();
         });
 
-        otpViewModel.getSdk().addOtpMissedCallReceivedCallback((fullPhoneNumber, tokenFourDigit, tokenSixDigit) -> {
-//            edtPinCode.setText(fullPhoneNumber);
-//            edtPinCode.setText(tokenFourDigit);
-            edtPinCode.setText(tokenSixDigit);
+
+        requireActivity().getOnBackPressedDispatcher().addCallback(requireActivity(), new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                Log.d("hello", "world");
+                otpViewModel.reset();
+                Navigation.findNavController(requireActivity(), R.id.fragmentContainer).navigateUp();
+            }
         });
     }
 
     private void initOtpListener() {
-        otpViewModel.isAuthenticationSuccessful().observe(requireActivity(), isSuccess -> {
+        otpViewModel.missedCallVerificationReceived().observe(requireActivity(), received -> {
+            if (received != null)
+                edtPinCode.setText(received.getReceivedFourPinCode());
+        });
+        otpViewModel.isVerificationSucceed().observe(requireActivity(), isSuccess -> {
             if (isSuccess)
-                navController.navigate(R.id.action_otpAuthenticatorFragment_to_otpAuthenticatedFragment);
+                Navigation.findNavController(requireActivity(), R.id.fragmentContainer)
+                        .navigate(R.id.action_otpAuthenticatorFragment_to_otpAuthenticatedFragment);
         });
         otpViewModel.exception().observe(requireActivity(), error -> {
             if (error != null)

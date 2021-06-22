@@ -6,125 +6,110 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 import androidx.lifecycle.ViewModelProvider;
 
-import com.motict.sdk.MotictSDK;
-import com.motict.sdk.callback.RequestMissedCallOTPCallback;
+import com.motict.sdk.MotictMissedCallVerifier;
 import com.motict.sdk.exception.RequiredPermissionDeniedException;
-import com.motict.sdk.model.MissedCallOTPResponse;
+import com.motict.sdk.model.MissedCallVerificationReceived;
 
 public class OtpViewModel extends ViewModel {
-    private final MotictSDK sdk;
+    private final MotictMissedCallVerifier verifier;
 
-    private final MutableLiveData<Boolean> isRequestingMissedCallOTP = new MutableLiveData<>(false);
+    private final MutableLiveData<Boolean> isVerificationStartedLoading = new MutableLiveData<>(false);
+    private final MutableLiveData<Boolean> isVerificationStarted = new MutableLiveData<>(false);
+    private final MutableLiveData<Boolean> isVerificationSucceed = new MutableLiveData<>(false);
+
+    private final MutableLiveData<MissedCallVerificationReceived> missedCallVerificationReceived = new MutableLiveData<>(null);
+
     private final MutableLiveData<Exception> exception = new MutableLiveData<>(null);
-    private final MutableLiveData<MissedCallOTPResponse> missedCallOTPResponse = new MutableLiveData<>(null);
-    private final MutableLiveData<Boolean> isAuthenticationSuccessful = new MutableLiveData<>(false);
     private String lastRequestedPhoneNumber;
 
-    private OtpViewModel(MotictSDK sdk) {
-        this.sdk = sdk;
+    private OtpViewModel(MotictMissedCallVerifier verifier) {
+        this.verifier = verifier;
+        this.verifier.addMissedCallVerificationStartedListener(start -> {
+            isVerificationStartedLoading.postValue(false);
+            isVerificationStarted.postValue(true);
+        });
+        this.verifier.addMissedCallVerificationFailedListener(exception::postValue);
+        this.verifier.addMissedCallVerificationReceivedListener(missedCallVerificationReceived::postValue);
+        this.verifier.addMissedCallVerificationSucceedListener(succeed -> isVerificationSucceed.postValue(true));
     }
 
-    public LiveData<Boolean> isRequestingMissedCallOTP() {
-        return isRequestingMissedCallOTP;
+    public LiveData<Boolean> isVerificationStartedLoading() {
+        return isVerificationStartedLoading;
+    }
+
+    public LiveData<Boolean> isVerificationStarted() {
+        return isVerificationStarted;
+    }
+
+    public LiveData<Boolean> isVerificationSucceed() {
+        return isVerificationSucceed;
+    }
+
+    public LiveData<MissedCallVerificationReceived> missedCallVerificationReceived() {
+        return missedCallVerificationReceived;
     }
 
     public LiveData<Exception> exception() {
         return exception;
     }
 
-    public LiveData<MissedCallOTPResponse> missedCallOTPResponse() {
-        return missedCallOTPResponse;
-    }
 
-    public LiveData<Boolean> isAuthenticationSuccessful() {
-        return isAuthenticationSuccessful;
-    }
-
-    public void requestMissedCallOTP(String phoneNumber) {
-        isRequestingMissedCallOTP.postValue(true);
+    public void startVerification(String phoneNumber) {
+        isVerificationStartedLoading.postValue(true);
         try {
-            sdk.requestMissedCallOTP(phoneNumber, new RequestMissedCallOTPCallback() {
-                @Override
-                public void onRequestMissedCallOTPSuccess(MissedCallOTPResponse response) {
-                    isRequestingMissedCallOTP.postValue(false);
-                    missedCallOTPResponse.postValue(response);
-                }
-
-                @Override
-                public void onRequestMissedCallOTPFailed(Exception error) {
-                    isRequestingMissedCallOTP.postValue(false);
-                    exception.postValue(error);
-                }
-            });
+            verifier.startVerification(phoneNumber);
         } catch (RequiredPermissionDeniedException e) {
             lastRequestedPhoneNumber = phoneNumber;
-            isRequestingMissedCallOTP.postValue(false);
+            isVerificationStartedLoading.postValue(false);
             exception.postValue(e);
-
         } catch (Exception e) {
-            isRequestingMissedCallOTP.postValue(false);
+            isVerificationStartedLoading.postValue(false);
             exception.postValue(e);
         }
     }
 
-    public void retryMissedCallOTP() {
-        isRequestingMissedCallOTP.postValue(true);
+    public void retryVerification() {
+        isVerificationStartedLoading.postValue(true);
         try {
-            sdk.requestMissedCallOTP(lastRequestedPhoneNumber, new RequestMissedCallOTPCallback() {
-                @Override
-                public void onRequestMissedCallOTPSuccess(MissedCallOTPResponse response) {
-                    isRequestingMissedCallOTP.postValue(false);
-                    missedCallOTPResponse.postValue(response);
-                }
-
-                @Override
-                public void onRequestMissedCallOTPFailed(Exception error) {
-                    isRequestingMissedCallOTP.postValue(false);
-                    exception.postValue(error);
-                }
-            });
+            verifier.startVerification(lastRequestedPhoneNumber);
         } catch (RequiredPermissionDeniedException e) {
-            isRequestingMissedCallOTP.postValue(false);
+            isVerificationStartedLoading.postValue(false);
             exception.postValue(e);
 
         } catch (Exception e) {
-            isRequestingMissedCallOTP.postValue(false);
+            isVerificationStartedLoading.postValue(false);
             exception.postValue(e);
         }
     }
 
-    public void verifyMissedCallOTP(String code) {
-        try {
-            sdk.verifyMissedCallOTP(code);
-            isAuthenticationSuccessful.postValue(true);
-        } catch (Exception e) {
-            exception.postValue(e);
-        }
+
+    public void verifyPinCode(String pinCode) {
+        verifier.verifyPinCode(pinCode);
     }
 
     public void reset() {
-        isRequestingMissedCallOTP.postValue(false);
+        isVerificationStartedLoading.postValue(false);
+        isVerificationStarted.postValue(false);
+        isVerificationSucceed.postValue(false);
         exception.postValue(null);
-        missedCallOTPResponse.postValue(null);
-        isAuthenticationSuccessful.postValue(false);
     }
 
 
-    public MotictSDK getSdk() {
-        return sdk;
+    public MotictMissedCallVerifier getVerifier() {
+        return verifier;
     }
 
     public static class Factory implements ViewModelProvider.Factory {
-        private final MotictSDK sdk;
+        private final MotictMissedCallVerifier verifier;
 
-        public Factory(MotictSDK sdk) {
-            this.sdk = sdk;
+        public Factory(MotictMissedCallVerifier verifier) {
+            this.verifier = verifier;
         }
 
         @NonNull
         @Override
         public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
-            return (T) new OtpViewModel(sdk);
+            return (T) new OtpViewModel(verifier);
         }
     }
 }

@@ -1,9 +1,9 @@
-package com.motict.sdk.model;
+package com.motict.sdk.api;
 
 import com.google.gson.annotations.SerializedName;
 
 
-public class MissedCallOTPResponse {
+public class RequestMissedCallOTPResponse {
     private String id;
 
     @SerializedName("token")
@@ -17,7 +17,7 @@ public class MissedCallOTPResponse {
 
     private String message;
 
-    public MissedCallOTPResponse() {
+    public RequestMissedCallOTPResponse() {
     }
 
     public String getId() {

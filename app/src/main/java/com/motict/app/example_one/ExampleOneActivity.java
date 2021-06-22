@@ -10,13 +10,13 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.motict.app.R;
 import com.motict.app.otp.OtpViewModel;
-import com.motict.sdk.MotictSDK;
+import com.motict.sdk.MotictMissedCallVerifier;
 
 import java.util.List;
 
 public class ExampleOneActivity extends AppCompatActivity {
     private static final int PERMISSIONS_REQUEST_CODE = 100;
-    private MotictSDK sdk;
+    private MotictMissedCallVerifier verifier;
     private OtpViewModel otpViewModel;
 
     @Override
@@ -27,15 +27,38 @@ public class ExampleOneActivity extends AppCompatActivity {
         getSupportActionBar().hide();
 
 
-        sdk = new MotictSDK.Builder(this)
+        verifier = new MotictMissedCallVerifier.Builder(this)
                 .withApiKey("1y8Bhut35ANt4WUuIVoAaW5TlfMp0DhCMDZTQXbGUGy36jgNHj3Kr4ewQj1V2oUe")
-                .addOtpMissedCallReceivedCallback((fullPhoneNumber, tokenFourDigit, tokenSixDigit) ->
-                        Toast.makeText(this,
-                                String.format(
-                                        "OTP Missed Call Received %s %s %s",
-                                        fullPhoneNumber, tokenFourDigit, tokenSixDigit),
-                                Toast.LENGTH_LONG
-                        ).show()
+                .addMissedCallVerificationStartedListener(start ->
+                        runOnUiThread(() -> Toast.makeText(this,
+                                String.format("Missed Call Verification Started: %s %s %s %s",
+                                        start.getVerifiedPhoneNumber(),
+                                        start.getReceivedFourPinCode(),
+                                        start.getReceivedSixPinCode(),
+                                        start.getReceivedPhoneNumber()),
+                                Toast.LENGTH_SHORT)
+                                .show())
+                )
+                .addMissedCallVerificationReceivedListener(received ->
+                        runOnUiThread(() -> Toast.makeText(this,
+                                String.format("Missed Call Verification Received: %s %s %s",
+                                        received.getReceivedFourPinCode(),
+                                        received.getReceivedSixPinCode(),
+                                        received.getReceivedPhoneNumber()), Toast.LENGTH_SHORT)
+                                .show())
+
+                )
+                .addMissedCallVerificationSucceedListener(succeed ->
+                        runOnUiThread(() -> Toast.makeText(this,
+                                String.format("Missed Call Verification Succeed: %s",
+                                        succeed.getVerifiedPhoneNumber()), Toast.LENGTH_SHORT)
+                                .show())
+                )
+                .addMissedCallVerificationFailedListener(failed ->
+                        runOnUiThread(() -> Toast.makeText(this,
+                                String.format("Missed Call Verification Failed: %s",
+                                        failed.toString()), Toast.LENGTH_SHORT)
+                                .show())
                 )
                 .build();
 
@@ -46,7 +69,7 @@ public class ExampleOneActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
-        sdk.finish();
+        verifier.finish();
         super.onDestroy();
     }
 
@@ -54,7 +77,7 @@ public class ExampleOneActivity extends AppCompatActivity {
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == PERMISSIONS_REQUEST_CODE) {
-            otpViewModel.retryMissedCallOTP();
+            otpViewModel.retryVerification();
         }
     }
 
@@ -63,7 +86,7 @@ public class ExampleOneActivity extends AppCompatActivity {
     }
 
     private void initViewModel() {
-        otpViewModel = new ViewModelProvider(this, new OtpViewModel.Factory(sdk))
+        otpViewModel = new ViewModelProvider(this, new OtpViewModel.Factory(verifier))
                 .get(OtpViewModel.class);
     }
 }

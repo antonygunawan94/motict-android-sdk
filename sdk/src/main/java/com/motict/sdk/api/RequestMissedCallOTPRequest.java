@@ -1,15 +1,15 @@
-package com.motict.sdk.model;
+package com.motict.sdk.api;
 
 import com.google.gson.annotations.SerializedName;
 
-public class MissedCallOTPRequest {
+class RequestMissedCallOTPRequest {
     @SerializedName("phone_number")
-    private  String phoneNumber;
+    private String phoneNumber;
 
-    public MissedCallOTPRequest() {
+    public RequestMissedCallOTPRequest() {
     }
 
-    public MissedCallOTPRequest(String phoneNumber) {
+    public RequestMissedCallOTPRequest(String phoneNumber) {
         this.phoneNumber = phoneNumber;
     }
 
