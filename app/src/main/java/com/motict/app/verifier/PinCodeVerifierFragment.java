@@ -1,4 +1,4 @@
-package com.motict.app.otp;
+package com.motict.app.verifier;
 
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -17,36 +17,40 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
 
 import com.motict.app.R;
+import com.motict.app.verifier.state.VerifierFailed;
+import com.motict.app.verifier.state.VerifierInitial;
+import com.motict.app.verifier.state.VerifierReceived;
+import com.motict.app.verifier.state.VerifierSucceed;
 import com.motict.sdk.exception.RequiredPermissionDeniedException;
 
 import br.com.simplepass.loadingbutton.customViews.CircularProgressButton;
 
 
-public class OtpAuthenticatorFragment extends Fragment {
+public class PinCodeVerifierFragment extends Fragment {
     private EditText edtPinCode;
 
     private CircularProgressButton btnNext;
     private Button btnCancel;
 
-    private OtpViewModel otpViewModel;
+    private VerifierViewModel verifierViewModel;
 
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_otp_authenticator, container, false);
+        return inflater.inflate(R.layout.fragment_pin_code_verifier, container, false);
     }
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        otpViewModel = new ViewModelProvider(requireActivity()).get(OtpViewModel.class);
+        verifierViewModel = new ViewModelProvider(requireActivity()).get(VerifierViewModel.class);
 
         initView(view);
         initViewListener();
-        initOtpListener();
-
+        initVerifierListener();
     }
+
 
     private void initView(View view) {
         edtPinCode = view.findViewById(R.id.edtPinCode);
@@ -61,37 +65,40 @@ public class OtpAuthenticatorFragment extends Fragment {
                 return;
             }
 
-            otpViewModel.verifyPinCode(edtPinCode.getText().toString());
+            verifierViewModel.verifyPinCode(edtPinCode.getText().toString());
         });
 
         btnCancel.setOnClickListener(view -> {
-            otpViewModel.reset();
-            Navigation.findNavController(requireActivity(), R.id.fragmentContainer).navigateUp();
+            verifierViewModel.cancel();
         });
 
 
         requireActivity().getOnBackPressedDispatcher().addCallback(requireActivity(), new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
-                otpViewModel.reset();
-                Navigation.findNavController(requireActivity(), R.id.fragmentContainer).navigateUp();
+                verifierViewModel.cancel();
             }
         });
     }
 
-    private void initOtpListener() {
-        otpViewModel.missedCallVerificationReceived().observe(requireActivity(), received -> {
-            if (received != null)
-                edtPinCode.setText(received.getReceivedFourPinCode());
-        });
-        otpViewModel.isVerificationSucceed().observe(requireActivity(), isSuccess -> {
-            if (isSuccess)
+    private void initVerifierListener() {
+        verifierViewModel.state().observe(getViewLifecycleOwner(), verifierState -> {
+            if (verifierState instanceof VerifierInitial)
                 Navigation.findNavController(requireActivity(), R.id.fragmentContainer)
-                        .navigate(R.id.action_otpAuthenticatorFragment_to_otpAuthenticatedFragment);
-        });
-        otpViewModel.exception().observe(requireActivity(), error -> {
-            if (error != null && !(error instanceof RequiredPermissionDeniedException))
-                Toast.makeText(requireActivity(), error.toString(), Toast.LENGTH_SHORT).show();
+                        .popBackStack();
+
+            if (verifierState instanceof VerifierReceived)
+                edtPinCode.setText(((VerifierReceived) verifierState).getReceived().getReceivedFourPinCode());
+
+            if (verifierState instanceof VerifierSucceed)
+                Navigation.findNavController(requireActivity(), R.id.fragmentContainer)
+                        .navigate(R.id.action_pinCodeVerifierFragment_to_authenticatedFragment);
+
+            if (verifierState instanceof VerifierFailed) {
+                VerifierFailed verifierFailed = (VerifierFailed) verifierState;
+                if (!(verifierFailed.getException() instanceof RequiredPermissionDeniedException))
+                    Toast.makeText(requireActivity(), verifierFailed.getException().toString(), Toast.LENGTH_SHORT).show();
+            }
         });
     }
 }

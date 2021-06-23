@@ -70,7 +70,9 @@ class MissedCallReceiver extends BroadcastReceiver {
         private final List<MissedCallVerificationSucceedListener> missedCallVerificationSucceedListeners;
         private final List<MissedCallVerificationFailedListener> missedCallVerificationFailedListeners;
 
+        private boolean isRinging = false;
         private boolean isTerminatedBySystem = false;
+
 
         MissedCallPhoneStateListener(
                 Context context,
@@ -115,6 +117,8 @@ class MissedCallReceiver extends BroadcastReceiver {
                 return;
             }
 
+            isRinging = true;
+
             if (!missedCallVerificationReceivedListeners.isEmpty())
                 for (MissedCallVerificationReceivedListener listener : missedCallVerificationReceivedListeners) {
                     listener.onMissedCallVerificationReceived(
@@ -136,7 +140,8 @@ class MissedCallReceiver extends BroadcastReceiver {
         }
 
         private void handlePhoneStateIdle() {
-            if (!isTerminatedBySystem) Log.i("Missed Call Receiver", "Rejected by user");
+            if (isRinging && !isTerminatedBySystem)
+                Log.i("Missed Call Receiver", "Rejected by user");
         }
 
         private void endCall() throws Exception {

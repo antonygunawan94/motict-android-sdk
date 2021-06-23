@@ -14,11 +14,14 @@ import com.motict.sdk.api.RequestMissedCallOTPCallback;
 import com.motict.sdk.api.RequestMissedCallOTPResponse;
 import com.motict.sdk.exception.AirplaneModeActiveException;
 import com.motict.sdk.exception.InvalidPinCodeException;
+import com.motict.sdk.exception.PinCodeVerificationNotStartedException;
 import com.motict.sdk.exception.RequiredPermissionDeniedException;
+import com.motict.sdk.listener.MissedCallVerificationCancelledListener;
 import com.motict.sdk.listener.MissedCallVerificationFailedListener;
 import com.motict.sdk.listener.MissedCallVerificationReceivedListener;
 import com.motict.sdk.listener.MissedCallVerificationStartedListener;
 import com.motict.sdk.listener.MissedCallVerificationSucceedListener;
+import com.motict.sdk.model.MissedCallVerificationCancelled;
 import com.motict.sdk.model.MissedCallVerificationStart;
 import com.motict.sdk.model.MissedCallVerificationSucceed;
 
@@ -31,6 +34,7 @@ public class MotictMissedCallVerifier implements RequestMissedCallOTPCallback {
     private final List<MissedCallVerificationStartedListener> missedCallVerificationStartedListeners;
     private final List<MissedCallVerificationReceivedListener> missedCallVerificationReceivedListeners;
     private final List<MissedCallVerificationSucceedListener> missedCallVerificationSucceedListeners;
+    private final List<MissedCallVerificationCancelledListener> missedCallVerificationCancelledListeners;
     private final List<MissedCallVerificationFailedListener> missedCallVerificationFailedListeners;
 
     private final RequestMissedCallOTPApi requestMissedCallOTPApi;
@@ -45,12 +49,14 @@ public class MotictMissedCallVerifier implements RequestMissedCallOTPCallback {
                                      List<MissedCallVerificationStartedListener> missedCallVerificationStartedListeners,
                                      List<MissedCallVerificationReceivedListener> missedCallVerificationReceivedListeners,
                                      List<MissedCallVerificationSucceedListener> missedCallVerificationSucceedListeners,
+                                     List<MissedCallVerificationCancelledListener> missedCallVerificationCancelledListeners,
                                      List<MissedCallVerificationFailedListener> missedCallVerificationFailedListeners) {
 
         this.context = context;
         this.missedCallVerificationStartedListeners = missedCallVerificationStartedListeners;
         this.missedCallVerificationReceivedListeners = missedCallVerificationReceivedListeners;
         this.missedCallVerificationSucceedListeners = missedCallVerificationSucceedListeners;
+        this.missedCallVerificationCancelledListeners = missedCallVerificationCancelledListeners;
         this.missedCallVerificationFailedListeners = missedCallVerificationFailedListeners;
         requestMissedCallOTPApi = new RequestMissedCallOTPApi(apiKey, this);
     }
@@ -67,10 +73,33 @@ public class MotictMissedCallVerifier implements RequestMissedCallOTPCallback {
         verifiedPhoneNumber = phoneNumber;
     }
 
+    public void cancelVerification() {
+        if (missedCallReceiver != null)
+            context.unregisterReceiver(missedCallReceiver);
+
+        for (MissedCallVerificationCancelledListener listener :
+                missedCallVerificationCancelledListeners) {
+            listener.onMissedCallVerificationCancelled(new MissedCallVerificationCancelled(verifiedPhoneNumber));
+        }
+
+        verifiedPhoneNumber = "";
+        missedCallReceiver = null;
+        missedCallVerificationStart = null;
+    }
+
     public void verifyPinCode(String pinCode) {
-        if (pinCode.equals(missedCallVerificationStart.getReceivedFourPinCode()) ||
-                pinCode.equals(missedCallVerificationStart.getReceivedSixPinCode()) ||
-                pinCode.equals(missedCallVerificationStart.getReceivedPhoneNumber()))
+        if (missedCallVerificationStart == null) {
+            for (MissedCallVerificationFailedListener listener :
+                    missedCallVerificationFailedListeners) {
+                listener.onMissedCallVerificationFailed(new PinCodeVerificationNotStartedException());
+            }
+
+            return;
+        }
+
+        if (pinCode.equals(missedCallVerificationStart.getToReceivedFourPinCode()) ||
+                pinCode.equals(missedCallVerificationStart.getToReceivedSixPinCode()) ||
+                pinCode.equals(missedCallVerificationStart.getToReceivedPhoneNumber()))
             for (MissedCallVerificationSucceedListener listener :
                     missedCallVerificationSucceedListeners) {
                 listener.onMissedCallVerificationSucceed(new MissedCallVerificationSucceed(verifiedPhoneNumber));
@@ -84,7 +113,6 @@ public class MotictMissedCallVerifier implements RequestMissedCallOTPCallback {
 
     public void addMissedCallVerificationStartedListener(MissedCallVerificationStartedListener listener) {
         this.missedCallVerificationStartedListeners.add(listener);
-
     }
 
     public void addMissedCallVerificationReceivedListener(MissedCallVerificationReceivedListener listener) {
@@ -94,16 +122,19 @@ public class MotictMissedCallVerifier implements RequestMissedCallOTPCallback {
 
     public void addMissedCallVerificationSucceedListener(MissedCallVerificationSucceedListener listener) {
         this.missedCallVerificationSucceedListeners.add(listener);
-
     }
+
+    public void addMissedCallVerificationCancelledListener(MissedCallVerificationCancelledListener listener) {
+        this.missedCallVerificationCancelledListeners.add(listener);
+    }
+
 
     public void addMissedCallVerificationFailedListener(MissedCallVerificationFailedListener listener) {
         this.missedCallVerificationFailedListeners.add(listener);
-
     }
 
 
-    public void finish() {
+    public void clear() {
         if (missedCallReceiver != null) context.unregisterReceiver(missedCallReceiver);
     }
 
@@ -197,6 +228,7 @@ public class MotictMissedCallVerifier implements RequestMissedCallOTPCallback {
         private final List<MissedCallVerificationStartedListener> missedCallVerificationStartedListeners = new ArrayList<>();
         private final List<MissedCallVerificationReceivedListener> missedCallVerificationReceivedListeners = new ArrayList<>();
         private final List<MissedCallVerificationSucceedListener> missedCallVerificationSucceedListeners = new ArrayList<>();
+        private final List<MissedCallVerificationCancelledListener> missedCallVerificationCancelledListeners = new ArrayList<>();
         private final List<MissedCallVerificationFailedListener> missedCallVerificationFailedListeners = new ArrayList<>();
         private String apiKey;
 
@@ -225,6 +257,12 @@ public class MotictMissedCallVerifier implements RequestMissedCallOTPCallback {
             return this;
         }
 
+        public Builder addMissedCallVerificationCancelledListener(MissedCallVerificationCancelledListener listener) {
+            this.missedCallVerificationCancelledListeners.add(listener);
+            return this;
+        }
+
+
         public Builder addMissedCallVerificationFailedListener(MissedCallVerificationFailedListener listener) {
             this.missedCallVerificationFailedListeners.add(listener);
             return this;
@@ -235,6 +273,7 @@ public class MotictMissedCallVerifier implements RequestMissedCallOTPCallback {
                     missedCallVerificationStartedListeners,
                     missedCallVerificationReceivedListeners,
                     missedCallVerificationSucceedListeners,
+                    missedCallVerificationCancelledListeners,
                     missedCallVerificationFailedListeners);
         }
     }

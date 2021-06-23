@@ -9,7 +9,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.motict.app.R;
-import com.motict.app.otp.OtpViewModel;
+import com.motict.app.verifier.VerifierViewModel;
 import com.motict.sdk.MotictMissedCallVerifier;
 import com.motict.sdk.exception.RequiredPermissionDeniedException;
 
@@ -18,7 +18,7 @@ import java.util.List;
 public class ExampleOneActivity extends AppCompatActivity {
     private static final int PERMISSIONS_REQUEST_CODE = 100;
     private MotictMissedCallVerifier verifier;
-    private OtpViewModel otpViewModel;
+    private VerifierViewModel verifierViewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,9 +34,9 @@ public class ExampleOneActivity extends AppCompatActivity {
                         runOnUiThread(() -> Toast.makeText(this,
                                 String.format("Missed Call Verification Started: %s %s %s %s",
                                         start.getVerifiedPhoneNumber(),
-                                        start.getReceivedFourPinCode(),
-                                        start.getReceivedSixPinCode(),
-                                        start.getReceivedPhoneNumber()),
+                                        start.getToReceivedFourPinCode(),
+                                        start.getToReceivedSixPinCode(),
+                                        start.getToReceivedPhoneNumber()),
                                 Toast.LENGTH_SHORT)
                                 .show())
                 )
@@ -53,6 +53,12 @@ public class ExampleOneActivity extends AppCompatActivity {
                         runOnUiThread(() -> Toast.makeText(this,
                                 String.format("Missed Call Verification Succeed: %s",
                                         succeed.getVerifiedPhoneNumber()), Toast.LENGTH_SHORT)
+                                .show())
+                )
+                .addMissedCallVerificationCancelledListener(cancelled ->
+                        runOnUiThread(() -> Toast.makeText(this,
+                                String.format("Missed Call Verification Cancelled: %s",
+                                        cancelled.getCancelledVerifierPhoneNumber()), Toast.LENGTH_SHORT)
                                 .show())
                 )
                 .addMissedCallVerificationFailedListener(failed ->
@@ -75,7 +81,7 @@ public class ExampleOneActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
-        verifier.finish();
+        verifier.clear();
         super.onDestroy();
     }
 
@@ -83,7 +89,7 @@ public class ExampleOneActivity extends AppCompatActivity {
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == PERMISSIONS_REQUEST_CODE) {
-            otpViewModel.retryVerification();
+            verifierViewModel.retryVerification();
         }
     }
 
@@ -92,7 +98,7 @@ public class ExampleOneActivity extends AppCompatActivity {
     }
 
     private void initViewModel() {
-        otpViewModel = new ViewModelProvider(this, new OtpViewModel.Factory(verifier))
-                .get(OtpViewModel.class);
+        verifierViewModel = new ViewModelProvider(this, new VerifierViewModel.Factory(verifier))
+                .get(VerifierViewModel.class);
     }
 }

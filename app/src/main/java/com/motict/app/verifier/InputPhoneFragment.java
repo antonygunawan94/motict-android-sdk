@@ -1,8 +1,7 @@
-package com.motict.app.otp;
+package com.motict.app.verifier;
 
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,6 +17,9 @@ import androidx.navigation.Navigation;
 
 import com.motict.app.R;
 import com.motict.app.example_one.ExampleOneActivity;
+import com.motict.app.verifier.state.VerifierFailed;
+import com.motict.app.verifier.state.VerifierLoading;
+import com.motict.app.verifier.state.VerifierStarted;
 import com.motict.sdk.exception.RequiredPermissionDeniedException;
 
 import br.com.simplepass.loadingbutton.customViews.CircularProgressButton;
@@ -27,7 +29,7 @@ public class InputPhoneFragment extends Fragment {
     private Button btnCancel;
     private CircularProgressButton btnNext;
 
-    private OtpViewModel otpViewModel;
+    private VerifierViewModel verifierViewModel;
 
 
     @Override
@@ -39,12 +41,11 @@ public class InputPhoneFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-
-        otpViewModel = new ViewModelProvider(requireActivity()).get(OtpViewModel.class);
+        verifierViewModel = new ViewModelProvider(requireActivity()).get(VerifierViewModel.class);
 
         initView(view);
         initViewListener();
-        initOtpListener();
+        initVerifierListener();
     }
 
 
@@ -62,41 +63,36 @@ public class InputPhoneFragment extends Fragment {
                 return;
             }
 
-            otpViewModel.startVerification(edtPhone.getText().toString());
+            verifierViewModel.startVerification(edtPhone.getText().toString());
         });
     }
 
 
-    private void initOtpListener() {
-        otpViewModel.isVerificationStartedLoading().observe(requireActivity(), isRequesting -> {
-            if (isRequesting) showLoading();
-            else hideLoading();
-        });
+    private void initVerifierListener() {
+        verifierViewModel.state().observe(getViewLifecycleOwner(), verifierState -> {
+            if (verifierState instanceof VerifierLoading) showLoading();
 
+            if (verifierState instanceof VerifierStarted) {
+                hideLoading();
+                Navigation.findNavController(requireActivity(), R.id.fragmentContainer)
+                        .navigate(R.id.action_inputPhoneFragment_to_pinCodeVerifierFragment);
+            }
 
-        otpViewModel.isVerificationStarted().observe(requireActivity(),
-                isStarted -> {
-                    if (isStarted)
-                        Navigation.findNavController(requireActivity(), R.id.fragmentContainer)
-                                .navigate(R.id.action_inputPhoneFragment_to_otpAuthenticatorFragment);
-                }
-        );
+            if (verifierState instanceof VerifierFailed) {
+                hideLoading();
+                VerifierFailed verifierFailed = (VerifierFailed) verifierState;
+                if (verifierFailed.getException() instanceof RequiredPermissionDeniedException) {
+                    final RequiredPermissionDeniedException e = (RequiredPermissionDeniedException) verifierFailed.getException();
 
-        otpViewModel.exception().observe(requireActivity(),
-                exception -> {
-                    if (exception != null) {
-                        if (exception instanceof RequiredPermissionDeniedException) {
-                            final RequiredPermissionDeniedException e = (RequiredPermissionDeniedException) exception;
-
-                            if (getActivity() instanceof ExampleOneActivity) {
-                                ((ExampleOneActivity) getActivity()).requestPermission(e.getDeniedPermissions());
-                            }
-                            return;
-                        }
-
-                        Toast.makeText(requireActivity(), exception.toString(), Toast.LENGTH_SHORT).show();
+                    if (getActivity() instanceof ExampleOneActivity) {
+                        ((ExampleOneActivity) getActivity()).requestPermission(e.getDeniedPermissions());
                     }
-                });
+                    return;
+                }
+
+                Toast.makeText(requireActivity(), verifierFailed.getException().toString(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
 

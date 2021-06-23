@@ -2,38 +2,37 @@
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/otp_nav"
+    android:id="@+id/verifier_nav"
     app:startDestination="@id/inputPhoneFragment">
 
     <fragment
         android:id="@+id/inputPhoneFragment"
-        android:name="com.motict.app.otp.InputPhoneFragment"
+        android:name="com.motict.app.verifier.InputPhoneFragment"
         android:label="fragment_input_phone"
         tools:layout="@layout/fragment_input_phone" >
         <action
-            android:id="@+id/action_inputPhoneFragment_to_otpAuthenticatorFragment"
-            app:destination="@id/otpAuthenticatorFragment"
+            android:id="@+id/action_inputPhoneFragment_to_pinCodeVerifierFragment"
+            app:destination="@id/pinCodeVerifierFragment"
             app:enterAnim="@android:anim/fade_in"
             app:exitAnim="@android:anim/fade_out"
             app:launchSingleTop="false"
             app:popEnterAnim="@android:anim/fade_in"
             app:popExitAnim="@android:anim/fade_out"
-            app:popUpTo="@id/inputPhoneFragment"
             app:popUpToInclusive="false" />
     </fragment>
     <fragment
-        android:id="@+id/otpAuthenticatedFragment"
-        android:name="com.motict.app.otp.OtpAuthenticatedFragment"
-        android:label="fragment_otp_authenticated"
-        tools:layout="@layout/fragment_otp_authenticated" />
+        android:id="@+id/authenticatedFragment"
+        android:name="com.motict.app.verifier.AuthenticatedFragment"
+        android:label="fragment_authenticated"
+        tools:layout="@layout/fragment_authenticated" />
     <fragment
-        android:id="@+id/otpAuthenticatorFragment"
-        android:name="com.motict.app.otp.OtpAuthenticatorFragment"
-        android:label="fragment_otp_authenticator"
-        tools:layout="@layout/fragment_otp_authenticator" >
+        android:id="@+id/pinCodeVerifierFragment"
+        android:name="com.motict.app.verifier.PinCodeVerifierFragment"
+        android:label="fragment_pin_code_verifier"
+        tools:layout="@layout/fragment_pin_code_verifier" >
         <action
-            android:id="@+id/action_otpAuthenticatorFragment_to_otpAuthenticatedFragment"
-            app:destination="@id/otpAuthenticatedFragment"
+            android:id="@+id/action_pinCodeVerifierFragment_to_authenticatedFragment"
+            app:destination="@id/authenticatedFragment"
             app:enterAnim="@android:anim/fade_in"
             app:exitAnim="@android:anim/fade_out"
             app:launchSingleTop="false"

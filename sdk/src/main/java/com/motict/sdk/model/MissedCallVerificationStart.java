@@ -4,18 +4,18 @@ package com.motict.sdk.model;
 public class MissedCallVerificationStart {
     private final String verifiedPhoneNumber;
 
-    private final String receivedFourPinCode;
-    private final String receivedSixPinCode;
-    private final String receivedPhoneNumber;
+    private final String toReceivedFourPinCode;
+    private final String toReceivedSixPinCode;
+    private final String toReceivedPhoneNumber;
 
     public MissedCallVerificationStart(String verifiedPhoneNumber,
-                                       String receivedFourPinCode,
-                                       String receivedSixPinCode,
-                                       String receivedPhoneNumber) {
+                                       String toReceivedFourPinCode,
+                                       String toReceivedSixPinCode,
+                                       String toReceivedPhoneNumber) {
         this.verifiedPhoneNumber = verifiedPhoneNumber;
-        this.receivedFourPinCode = receivedFourPinCode;
-        this.receivedSixPinCode = receivedSixPinCode;
-        this.receivedPhoneNumber = receivedPhoneNumber;
+        this.toReceivedFourPinCode = toReceivedFourPinCode;
+        this.toReceivedSixPinCode = toReceivedSixPinCode;
+        this.toReceivedPhoneNumber = toReceivedPhoneNumber;
     }
 
 
@@ -23,15 +23,15 @@ public class MissedCallVerificationStart {
         return verifiedPhoneNumber;
     }
 
-    public String getReceivedFourPinCode() {
-        return receivedFourPinCode;
+    public String getToReceivedFourPinCode() {
+        return toReceivedFourPinCode;
     }
 
-    public String getReceivedSixPinCode() {
-        return receivedSixPinCode;
+    public String getToReceivedSixPinCode() {
+        return toReceivedSixPinCode;
     }
 
-    public String getReceivedPhoneNumber() {
-        return receivedPhoneNumber;
+    public String getToReceivedPhoneNumber() {
+        return toReceivedPhoneNumber;
     }
 }
