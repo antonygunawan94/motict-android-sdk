@@ -8,12 +8,13 @@ import android.content.pm.PackageManager;
 import android.telecom.TelecomManager;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
-import android.util.Log;
 
 import androidx.core.app.ActivityCompat;
 
 import com.motict.sdk.listener.MissedCallVerificationFailedListener;
 import com.motict.sdk.listener.MissedCallVerificationReceivedListener;
+import com.motict.sdk.listener.MissedCallVerificationRejectedListener;
+import com.motict.sdk.listener.MissedCallVerificationRingingListener;
 import com.motict.sdk.listener.MissedCallVerificationSucceedListener;
 import com.motict.sdk.model.MissedCallVerificationReceived;
 import com.motict.sdk.model.MissedCallVerificationSucceed;
@@ -24,22 +25,29 @@ import java.util.List;
 class MissedCallReceiver extends BroadcastReceiver {
     private final String verifiedPhoneNumber;
     private final String listenedPhoneNumber;
+    private final List<MissedCallVerificationRingingListener> missedCallVerificationRingingListeners;
     private final List<MissedCallVerificationReceivedListener> missedCallVerificationReceivedListeners;
     private final List<MissedCallVerificationSucceedListener> missedCallVerificationSucceedListeners;
+    private final List<MissedCallVerificationRejectedListener> missedCallVerificationRejectedListeners;
     private final List<MissedCallVerificationFailedListener> missedCallVerificationFailedListeners;
 
     private MissedCallPhoneStateListener missedCallPhoneStateListener;
 
+
     MissedCallReceiver(
             String verifiedPhoneNumber,
             String listenedPhoneNumber,
+            List<MissedCallVerificationRingingListener> missedCallVerificationRingingListeners,
             List<MissedCallVerificationReceivedListener> missedCallVerificationReceivedListeners,
             List<MissedCallVerificationSucceedListener> missedCallVerificationSucceedListeners,
+            List<MissedCallVerificationRejectedListener> missedCallVerificationRejectedListeners,
             List<MissedCallVerificationFailedListener> missedCallVerificationFailedListeners) {
         this.verifiedPhoneNumber = verifiedPhoneNumber;
         this.listenedPhoneNumber = listenedPhoneNumber;
+        this.missedCallVerificationRingingListeners = missedCallVerificationRingingListeners;
         this.missedCallVerificationReceivedListeners = missedCallVerificationReceivedListeners;
         this.missedCallVerificationSucceedListeners = missedCallVerificationSucceedListeners;
+        this.missedCallVerificationRejectedListeners = missedCallVerificationRejectedListeners;
         this.missedCallVerificationFailedListeners = missedCallVerificationFailedListeners;
     }
 
@@ -52,8 +60,10 @@ class MissedCallReceiver extends BroadcastReceiver {
                     context,
                     verifiedPhoneNumber,
                     listenedPhoneNumber,
+                    missedCallVerificationRingingListeners,
                     missedCallVerificationReceivedListeners,
                     missedCallVerificationSucceedListeners,
+                    missedCallVerificationRejectedListeners,
                     missedCallVerificationFailedListeners);
             telephonyManager.listen(
                     missedCallPhoneStateListener,
@@ -66,8 +76,10 @@ class MissedCallReceiver extends BroadcastReceiver {
         private final Context context;
         private final String verifiedPhoneNumber;
         private final String listenedPhoneNumber;
+        private final List<MissedCallVerificationRingingListener> missedCallVerificationRingingListeners;
         private final List<MissedCallVerificationReceivedListener> missedCallVerificationReceivedListeners;
         private final List<MissedCallVerificationSucceedListener> missedCallVerificationSucceedListeners;
+        private final List<MissedCallVerificationRejectedListener> missedCallVerificationRejectedListeners;
         private final List<MissedCallVerificationFailedListener> missedCallVerificationFailedListeners;
 
         private boolean isRinging = false;
@@ -78,21 +90,26 @@ class MissedCallReceiver extends BroadcastReceiver {
                 Context context,
                 String verifiedPhoneNumber,
                 String listenedPhoneNumber,
+                List<MissedCallVerificationRingingListener> missedCallVerificationRingingListeners,
                 List<MissedCallVerificationReceivedListener> missedCallVerificationReceivedListeners,
                 List<MissedCallVerificationSucceedListener> missedCallVerificationSucceedListeners,
+                List<MissedCallVerificationRejectedListener> missedCallVerificationRejectedListeners,
                 List<MissedCallVerificationFailedListener> missedCallVerificationFailedListeners) {
             this.context = context;
             this.verifiedPhoneNumber = verifiedPhoneNumber;
             this.listenedPhoneNumber = listenedPhoneNumber;
+            this.missedCallVerificationRingingListeners = missedCallVerificationRingingListeners;
             this.missedCallVerificationReceivedListeners = missedCallVerificationReceivedListeners;
             this.missedCallVerificationSucceedListeners = missedCallVerificationSucceedListeners;
+            this.missedCallVerificationRejectedListeners = missedCallVerificationRejectedListeners;
             this.missedCallVerificationFailedListeners = missedCallVerificationFailedListeners;
         }
 
 
         @Override
         public void onCallStateChanged(int state, String phoneNumber) {
-            if (!phoneNumber.equals(listenedPhoneNumber)) return;
+            if (!phoneNumber.replaceAll("\\+", "")
+                    .equals(listenedPhoneNumber.replaceAll("\\+", ""))) return;
 
             switch (state) {
                 case TelephonyManager.CALL_STATE_RINGING:
@@ -108,6 +125,15 @@ class MissedCallReceiver extends BroadcastReceiver {
         }
 
         private void handlePhoneStateRinging(String phoneNumber) {
+            isRinging = true;
+
+            if (!missedCallVerificationRingingListeners.isEmpty())
+                for (MissedCallVerificationRingingListener listener : missedCallVerificationRingingListeners) {
+                    listener.onMissedCallVerificationRinging(
+                            phoneNumber
+                    );
+                }
+
             try {
                 endCall();
             } catch (Exception exception) {
@@ -117,7 +143,6 @@ class MissedCallReceiver extends BroadcastReceiver {
                 return;
             }
 
-            isRinging = true;
 
             if (!missedCallVerificationReceivedListeners.isEmpty())
                 for (MissedCallVerificationReceivedListener listener : missedCallVerificationReceivedListeners) {
@@ -141,7 +166,9 @@ class MissedCallReceiver extends BroadcastReceiver {
 
         private void handlePhoneStateIdle() {
             if (isRinging && !isTerminatedBySystem)
-                Log.i("Missed Call Receiver", "Rejected by user");
+                for (MissedCallVerificationRejectedListener listener : missedCallVerificationRejectedListeners) {
+                    listener.onMissedCallVerificationRejected();
+                }
         }
 
         private void endCall() throws Exception {

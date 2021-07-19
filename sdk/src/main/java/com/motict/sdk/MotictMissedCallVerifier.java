@@ -3,12 +3,18 @@ package com.motict.sdk;
 import android.Manifest;
 import android.content.Context;
 import android.content.IntentFilter;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.provider.Settings;
+import android.util.Log;
 
+import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
+import com.motict.sdk.api.LogEventApi;
 import com.motict.sdk.api.RequestMissedCallOTPApi;
 import com.motict.sdk.api.RequestMissedCallOTPCallback;
 import com.motict.sdk.api.RequestMissedCallOTPResponse;
@@ -19,6 +25,8 @@ import com.motict.sdk.exception.RequiredPermissionDeniedException;
 import com.motict.sdk.listener.MissedCallVerificationCancelledListener;
 import com.motict.sdk.listener.MissedCallVerificationFailedListener;
 import com.motict.sdk.listener.MissedCallVerificationReceivedListener;
+import com.motict.sdk.listener.MissedCallVerificationRejectedListener;
+import com.motict.sdk.listener.MissedCallVerificationRingingListener;
 import com.motict.sdk.listener.MissedCallVerificationStartedListener;
 import com.motict.sdk.listener.MissedCallVerificationSucceedListener;
 import com.motict.sdk.model.MissedCallVerificationCancelled;
@@ -26,19 +34,23 @@ import com.motict.sdk.model.MissedCallVerificationStart;
 import com.motict.sdk.model.MissedCallVerificationSucceed;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class MotictMissedCallVerifier implements RequestMissedCallOTPCallback {
     private final Context context;
 
-    private final List<MissedCallVerificationStartedListener> missedCallVerificationStartedListeners;
-    private final List<MissedCallVerificationReceivedListener> missedCallVerificationReceivedListeners;
-    private final List<MissedCallVerificationSucceedListener> missedCallVerificationSucceedListeners;
-    private final List<MissedCallVerificationCancelledListener> missedCallVerificationCancelledListeners;
-    private final List<MissedCallVerificationFailedListener> missedCallVerificationFailedListeners;
-
+    private final List<MissedCallVerificationRingingListener> missedCallVerificationRingingListeners = new ArrayList<>();
+    private final List<MissedCallVerificationStartedListener> missedCallVerificationStartedListeners = new ArrayList<>();
+    private final List<MissedCallVerificationReceivedListener> missedCallVerificationReceivedListeners = new ArrayList<>();
+    private final List<MissedCallVerificationSucceedListener> missedCallVerificationSucceedListeners = new ArrayList<>();
+    private final List<MissedCallVerificationCancelledListener> missedCallVerificationCancelledListeners = new ArrayList<>();
+    private final List<MissedCallVerificationRejectedListener> missedCallVerificationRejectedListeners = new ArrayList<>();
+    private final List<MissedCallVerificationFailedListener> missedCallVerificationFailedListeners = new ArrayList<>();
     private final RequestMissedCallOTPApi requestMissedCallOTPApi;
-
+    private final LogEventApi logEventApi;
+    private final FusedLocationProviderClient fusedLocationProviderClient;
+    private PackageInfo packageInfo;
     private String verifiedPhoneNumber;
     private MissedCallReceiver missedCallReceiver;
     private MissedCallVerificationStart missedCallVerificationStart;
@@ -51,14 +63,33 @@ public class MotictMissedCallVerifier implements RequestMissedCallOTPCallback {
                                      List<MissedCallVerificationSucceedListener> missedCallVerificationSucceedListeners,
                                      List<MissedCallVerificationCancelledListener> missedCallVerificationCancelledListeners,
                                      List<MissedCallVerificationFailedListener> missedCallVerificationFailedListeners) {
+        try {
+            packageInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
+        } catch (PackageManager.NameNotFoundException e) {
+            Log.e("MOTICT_SDK", e.toString());
+        }
+
+
+        requestMissedCallOTPApi = new RequestMissedCallOTPApi(apiKey, this);
+        logEventApi = new LogEventApi(apiKey);
+        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(context);
 
         this.context = context;
-        this.missedCallVerificationStartedListeners = missedCallVerificationStartedListeners;
-        this.missedCallVerificationReceivedListeners = missedCallVerificationReceivedListeners;
-        this.missedCallVerificationSucceedListeners = missedCallVerificationSucceedListeners;
-        this.missedCallVerificationCancelledListeners = missedCallVerificationCancelledListeners;
-        this.missedCallVerificationFailedListeners = missedCallVerificationFailedListeners;
-        requestMissedCallOTPApi = new RequestMissedCallOTPApi(apiKey, this);
+
+        this.missedCallVerificationRingingListeners.add(start -> logEvent("ringing"));
+        this.missedCallVerificationStartedListeners.add(start -> logEvent("started"));
+        this.missedCallVerificationReceivedListeners.add(received -> logEvent("received"));
+        this.missedCallVerificationSucceedListeners.add(succeed -> logEvent("succeed"));
+        this.missedCallVerificationCancelledListeners.add(cancelled -> logEvent("cancelled"));
+        this.missedCallVerificationRejectedListeners.add(() -> logEvent("rejected"));
+        this.missedCallVerificationFailedListeners.add(failed -> logEvent("failed"));
+
+
+        this.missedCallVerificationStartedListeners.addAll(missedCallVerificationStartedListeners);
+        this.missedCallVerificationReceivedListeners.addAll(missedCallVerificationReceivedListeners);
+        this.missedCallVerificationSucceedListeners.addAll(missedCallVerificationSucceedListeners);
+        this.missedCallVerificationCancelledListeners.addAll(missedCallVerificationCancelledListeners);
+        this.missedCallVerificationFailedListeners.addAll(missedCallVerificationFailedListeners);
     }
 
 
@@ -139,6 +170,61 @@ public class MotictMissedCallVerifier implements RequestMissedCallOTPCallback {
     }
 
 
+    private void logEvent(String eventName) {
+        if (missedCallVerificationStart == null) return;
+
+        final String versionName = packageInfo == null ? "" : packageInfo.versionName;
+        final String packageName = packageInfo == null ? "" : packageInfo.packageName;
+
+        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            logEventApi.execute(
+                    missedCallVerificationStart.getId(),
+                    String.valueOf(Build.VERSION.SDK_INT),
+                    versionName,
+                    packageName,
+                    eventName,
+                    new Date(),
+                    "",
+                    "");
+            return;
+        }
+
+
+        fusedLocationProviderClient.getLastLocation()
+                .addOnSuccessListener(location -> {
+                    if (location != null)
+                        logEventApi.execute(
+                                missedCallVerificationStart.getId(),
+                                String.valueOf(Build.VERSION.SDK_INT),
+                                versionName,
+                                packageName,
+                                eventName,
+                                new Date(),
+                                String.valueOf(location.getLatitude()),
+                                String.valueOf(location.getLongitude()));
+                    else
+                        logEventApi.execute(
+                                missedCallVerificationStart.getId(),
+                                String.valueOf(Build.VERSION.SDK_INT),
+                                versionName,
+                                packageName,
+                                eventName,
+                                new Date(),
+                                "",
+                                "");
+                })
+                .addOnFailureListener(runnable ->
+                        logEventApi.execute(
+                                missedCallVerificationStart.getId(),
+                                String.valueOf(Build.VERSION.SDK_INT),
+                                versionName,
+                                packageName,
+                                eventName,
+                                new Date(),
+                                "",
+                                ""));
+    }
+
     private void checkNecessaryPermissions() throws Exception {
         List<String> permissions = new ArrayList<>();
 
@@ -172,6 +258,20 @@ public class MotictMissedCallVerifier implements RequestMissedCallOTPCallback {
         )
             permissions.add((Manifest.permission.READ_CALL_LOG));
 
+        if (ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+        ) != PackageManager.PERMISSION_GRANTED
+        )
+            permissions.add(Manifest.permission.ACCESS_COARSE_LOCATION);
+
+        if (ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_FINE_LOCATION
+        ) != PackageManager.PERMISSION_GRANTED
+        )
+            permissions.add(Manifest.permission.ACCESS_FINE_LOCATION);
+
 
         if (!permissions.isEmpty()) throw new RequiredPermissionDeniedException(permissions);
 
@@ -197,14 +297,17 @@ public class MotictMissedCallVerifier implements RequestMissedCallOTPCallback {
         missedCallReceiver = new MissedCallReceiver(
                 verifiedPhoneNumber,
                 response.getFullPhoneNumber(),
+                missedCallVerificationRingingListeners,
                 missedCallVerificationReceivedListeners,
                 missedCallVerificationSucceedListeners,
+                missedCallVerificationRejectedListeners,
                 missedCallVerificationFailedListeners
         );
 
         context.registerReceiver(missedCallReceiver, new IntentFilter("android.intent.action.PHONE_STATE"));
 
         missedCallVerificationStart = new MissedCallVerificationStart(
+                response.getId(),
                 verifiedPhoneNumber,
                 response.getTokenFourDigit(),
                 response.getTokenSixDigit(),
@@ -222,6 +325,7 @@ public class MotictMissedCallVerifier implements RequestMissedCallOTPCallback {
             listener.onMissedCallVerificationFailed(error);
         }
     }
+
 
     public static class Builder {
         private final Context context;
@@ -277,6 +381,5 @@ public class MotictMissedCallVerifier implements RequestMissedCallOTPCallback {
                     missedCallVerificationFailedListeners);
         }
     }
-
 
 }

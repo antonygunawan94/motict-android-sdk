@@ -31,7 +31,7 @@ public class ExampleOneActivity extends AppCompatActivity {
         verifier = new MotictMissedCallVerifier.Builder(this)
                 .withApiKey("1y8Bhut35ANt4WUuIVoAaW5TlfMp0DhCMDZTQXbGUGy36jgNHj3Kr4ewQj1V2oUe")
                 .addMissedCallVerificationStartedListener(start ->
-                        runOnUiThread(() -> Toast.makeText(this,
+                        runOnUiThread(() -> Toast.makeText(ExampleOneActivity.this,
                                 String.format("Missed Call Verification Started: %s %s %s %s",
                                         start.getVerifiedPhoneNumber(),
                                         start.getToReceivedFourPinCode(),

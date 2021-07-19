@@ -1,10 +1,13 @@
 package com.motict.sdk.api;
 
+import android.util.Log;
+
 import com.google.gson.Gson;
 
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.util.Date;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -13,24 +16,41 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
-public class RequestMissedCallOTPApi {
+public class LogEventApi {
     private final String apiKey;
-    private final RequestMissedCallOTPCallback callback;
+
 
     private final Gson gson = new Gson();
     private final OkHttpClient httpClient = new OkHttpClient();
 
 
-    public RequestMissedCallOTPApi(String apiKey, RequestMissedCallOTPCallback callback) {
+    public LogEventApi(String apiKey) {
         this.apiKey = apiKey;
-        this.callback = callback;
     }
 
-    public void execute(String verifiedPhone) {
-        final String requestBody = gson.toJson(new RequestMissedCallOTPRequest(verifiedPhone));
+    public void execute(
+            String sid,
+            String osVersion,
+            String appVersion,
+            String appPackageName,
+            String eventName,
+            Date eventTimestamp,
+            String latitude,
+            String longitude
+    ) {
+        final String requestBody = gson.toJson(new LogEventRequest(
+                sid,
+                osVersion,
+                appVersion,
+                appPackageName,
+                eventName,
+                eventTimestamp,
+                latitude,
+                longitude
+        ));
 
         Request request = new Request.Builder()
-                .url("https://api.motict.com/v1/calls")
+                .url("https://api.motict.com/v1/calls/webhook/sdk")
                 .addHeader("Authorization", apiKey)
                 .addHeader("Content-Type", "application/json")
                 .post(RequestBody.create(requestBody, MediaTypeApi.JSON))
@@ -39,7 +59,7 @@ public class RequestMissedCallOTPApi {
         httpClient.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(@NotNull Call call, @NotNull IOException e) {
-                callback.onRequestMissedCallOTPFailed(e);
+                Log.e("MOTICT_SDK", e.toString());
             }
 
             @Override
@@ -47,17 +67,15 @@ public class RequestMissedCallOTPApi {
                 try {
                     final String body = response.body().string();
 
-                    if (response.code() >= 400) {
-                        callback.onRequestMissedCallOTPFailed(gson.fromJson(body, ErrorResponse.class).toException());
-                        return;
-                    }
+                    if (response.code() >= 400)
+                        Log.e("MOTICT_SDK", gson.fromJson(body, ErrorResponse.class).toException().toString());
 
-                    callback.onRequestMissedCallOTPSuccess(gson.fromJson(body, RequestMissedCallOTPResponse.class));
+
+                    Log.i("MOTICT_SDK", "success log event " + body);
                 } catch (IOException e) {
-                    callback.onRequestMissedCallOTPFailed(e);
+                    Log.e("MOTICT_SDK", e.toString());
                 }
             }
         });
     }
-
 }
