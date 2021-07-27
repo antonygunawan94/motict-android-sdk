@@ -19,6 +19,9 @@
             app:popEnterAnim="@android:anim/fade_in"
             app:popExitAnim="@android:anim/fade_out"
             app:popUpToInclusive="false" />
+        <action
+            android:id="@+id/action_inputPhoneFragment_to_authenticatedFragment"
+            app:destination="@id/authenticatedFragment" />
     </fragment>
     <fragment
         android:id="@+id/authenticatedFragment"

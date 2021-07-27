@@ -1,7 +1,5 @@
 package com.motict.sdk.api;
 
-import android.util.Log;
-
 import com.google.gson.Gson;
 
 import org.jetbrains.annotations.NotNull;
@@ -18,14 +16,16 @@ import okhttp3.Response;
 
 public class LogEventApi {
     private final String apiKey;
+    private final LogEventCallback callback;
 
 
     private final Gson gson = new Gson();
     private final OkHttpClient httpClient = new OkHttpClient();
 
 
-    public LogEventApi(String apiKey) {
+    public LogEventApi(String apiKey, LogEventCallback callback) {
         this.apiKey = apiKey;
+        this.callback = callback;
     }
 
     public void execute(
@@ -36,7 +36,8 @@ public class LogEventApi {
             String eventName,
             Date eventTimestamp,
             String latitude,
-            String longitude
+            String longitude,
+            String errorMessage
     ) {
         final String requestBody = gson.toJson(new LogEventRequest(
                 sid,
@@ -46,7 +47,8 @@ public class LogEventApi {
                 eventName,
                 eventTimestamp,
                 latitude,
-                longitude
+                longitude,
+                errorMessage
         ));
 
         Request request = new Request.Builder()
@@ -59,7 +61,7 @@ public class LogEventApi {
         httpClient.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(@NotNull Call call, @NotNull IOException e) {
-                Log.e("MOTICT_SDK", e.toString());
+                callback.onLogEventFailed(e);
             }
 
             @Override
@@ -68,12 +70,12 @@ public class LogEventApi {
                     final String body = response.body().string();
 
                     if (response.code() >= 400)
-                        Log.e("MOTICT_SDK", gson.fromJson(body, ErrorResponse.class).toException().toString());
+                        callback.onLogEventFailed(gson.fromJson(body, ErrorResponse.class).toException());
 
 
-                    Log.i("MOTICT_SDK", "success log event " + body);
+                    callback.onLogEventSuccess(body);
                 } catch (IOException e) {
-                    Log.e("MOTICT_SDK", e.toString());
+                    callback.onLogEventFailed(e);
                 }
             }
         });

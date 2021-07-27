@@ -19,7 +19,9 @@ import com.motict.app.R;
 import com.motict.app.example_one.ExampleOneActivity;
 import com.motict.app.verifier.state.VerifierFailed;
 import com.motict.app.verifier.state.VerifierLoading;
+import com.motict.app.verifier.state.VerifierReceived;
 import com.motict.app.verifier.state.VerifierStarted;
+import com.motict.app.verifier.state.VerifierSucceed;
 import com.motict.sdk.exception.RequiredPermissionDeniedException;
 
 import br.com.simplepass.loadingbutton.customViews.CircularProgressButton;
@@ -76,6 +78,18 @@ public class InputPhoneFragment extends Fragment {
                 hideLoading();
                 Navigation.findNavController(requireActivity(), R.id.fragmentContainer)
                         .navigate(R.id.action_inputPhoneFragment_to_pinCodeVerifierFragment);
+            }
+
+            if (verifierState instanceof VerifierReceived) {
+                hideLoading();
+                Navigation.findNavController(requireActivity(), R.id.fragmentContainer)
+                        .navigate(R.id.action_inputPhoneFragment_to_pinCodeVerifierFragment);
+            }
+
+            if (verifierState instanceof VerifierSucceed) {
+                hideLoading();
+                Navigation.findNavController(requireActivity(), R.id.fragmentContainer)
+                        .navigate(R.id.action_inputPhoneFragment_to_authenticatedFragment);
             }
 
             if (verifierState instanceof VerifierFailed) {

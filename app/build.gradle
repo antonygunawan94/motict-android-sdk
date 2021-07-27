@@ -52,4 +52,7 @@ dependencies {
 
 
     implementation 'br.com.simplepass:loading-button-android:2.2.0'
+
+    implementation 'io.sentry:sentry-android:5.0.1'
+
 }

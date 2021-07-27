@@ -22,11 +22,13 @@ public class LogEventRequest {
     private String latitude;
     @SerializedName("longitude")
     private String longitude;
+    @SerializedName("error_message")
+    private String errorMessage;
 
     public LogEventRequest() {
     }
 
-    public LogEventRequest(String sid, String OSVersion, String appVersion, String appPackageName, String eventName, Date eventTimestamp, String latitude, String longitude) {
+    public LogEventRequest(String sid, String OSVersion, String appVersion, String appPackageName, String eventName, Date eventTimestamp, String latitude, String longitude, String errorMessage) {
         this.sid = sid;
         this.osVersion = OSVersion;
         this.appVersion = appVersion;
@@ -36,6 +38,7 @@ public class LogEventRequest {
                 .format(eventTimestamp);
         this.latitude = latitude;
         this.longitude = longitude;
+        this.errorMessage = errorMessage;
     }
 
 
@@ -69,5 +72,9 @@ public class LogEventRequest {
 
     public String getLongitude() {
         return longitude;
+    }
+
+    public String getErrorMessage() {
+        return errorMessage;
     }
 }
