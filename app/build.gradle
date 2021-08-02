@@ -1,6 +1,9 @@
 plugins {
     id 'com.android.application'
+    id 'kotlin-android'
+    id 'maven-publish'
 }
+
 
 android {
     compileSdkVersion 30
@@ -48,11 +51,20 @@ dependencies {
     implementation "androidx.lifecycle:lifecycle-livedata:$lifecycle_version"
     implementation "androidx.lifecycle:lifecycle-common-java8:$lifecycle_version"
 
-//    implementation 'com.github.antonygunawan94:motict-android-sdk:0.1.0'
-
-
     implementation 'br.com.simplepass:loading-button-android:2.2.0'
 
     implementation 'io.sentry:sentry-android:5.0.1'
 
+}
+
+afterEvaluate {
+    publishing {
+        publications {
+            release(MavenPublication) {
+                groupId = 'com.motict.sdk.app'
+                artifactId = 'app'
+                version = '1.0'
+            }
+        }
+    }
 }
