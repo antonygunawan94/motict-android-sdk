@@ -14,7 +14,7 @@ import com.motict.app.verifier.state.VerifierStarted;
 import com.motict.app.verifier.state.VerifierState;
 import com.motict.app.verifier.state.VerifierSucceed;
 import com.motict.sdk.MotictMissedCallVerifier;
-import com.motict.sdk.exception.RequiredPermissionDeniedException;
+import com.motict.sdk.exception.PermissionDeniedException;
 
 public class VerifierViewModel extends ViewModel {
     private final MotictMissedCallVerifier verifier;
@@ -42,7 +42,7 @@ public class VerifierViewModel extends ViewModel {
         state.postValue(new VerifierLoading());
         try {
             verifier.startVerification(phoneNumber);
-        } catch (RequiredPermissionDeniedException e) {
+        } catch (PermissionDeniedException e) {
             lastRequestedPhoneNumber = phoneNumber;
             state.postValue(new VerifierFailed(e));
         } catch (Exception e) {
@@ -54,7 +54,7 @@ public class VerifierViewModel extends ViewModel {
         state.postValue(new VerifierLoading());
         try {
             verifier.startVerification(lastRequestedPhoneNumber);
-        } catch (RequiredPermissionDeniedException e) {
+        } catch (PermissionDeniedException e) {
             state.postValue(new VerifierFailed(e));
         } catch (Exception e) {
             state.postValue(new VerifierFailed(e));

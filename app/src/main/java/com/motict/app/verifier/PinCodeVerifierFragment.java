@@ -21,7 +21,7 @@ import com.motict.app.verifier.state.VerifierFailed;
 import com.motict.app.verifier.state.VerifierInitial;
 import com.motict.app.verifier.state.VerifierReceived;
 import com.motict.app.verifier.state.VerifierSucceed;
-import com.motict.sdk.exception.RequiredPermissionDeniedException;
+import com.motict.sdk.exception.PermissionDeniedException;
 
 import br.com.simplepass.loadingbutton.customViews.CircularProgressButton;
 
@@ -96,7 +96,7 @@ public class PinCodeVerifierFragment extends Fragment {
 
             if (verifierState instanceof VerifierFailed) {
                 VerifierFailed verifierFailed = (VerifierFailed) verifierState;
-                if (!(verifierFailed.getException() instanceof RequiredPermissionDeniedException))
+                if (!(verifierFailed.getException() instanceof PermissionDeniedException))
                     Toast.makeText(requireActivity(), verifierFailed.getException().toString(), Toast.LENGTH_SHORT).show();
             }
         });

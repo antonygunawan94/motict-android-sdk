@@ -22,7 +22,7 @@ import com.motict.app.verifier.state.VerifierLoading;
 import com.motict.app.verifier.state.VerifierReceived;
 import com.motict.app.verifier.state.VerifierStarted;
 import com.motict.app.verifier.state.VerifierSucceed;
-import com.motict.sdk.exception.RequiredPermissionDeniedException;
+import com.motict.sdk.exception.PermissionDeniedException;
 
 import br.com.simplepass.loadingbutton.customViews.CircularProgressButton;
 
@@ -95,11 +95,11 @@ public class InputPhoneFragment extends Fragment {
             if (verifierState instanceof VerifierFailed) {
                 hideLoading();
                 VerifierFailed verifierFailed = (VerifierFailed) verifierState;
-                if (verifierFailed.getException() instanceof RequiredPermissionDeniedException) {
-                    final RequiredPermissionDeniedException e = (RequiredPermissionDeniedException) verifierFailed.getException();
+                if (verifierFailed.getException() instanceof PermissionDeniedException) {
+                    final PermissionDeniedException e = (PermissionDeniedException) verifierFailed.getException();
 
                     if (getActivity() instanceof ExampleOneActivity) {
-                        ((ExampleOneActivity) getActivity()).requestPermission(e.getDeniedPermissions());
+                        ((ExampleOneActivity) getActivity()).requestPermission(e.getAllDeniedPermissions());
                     }
                     return;
                 }

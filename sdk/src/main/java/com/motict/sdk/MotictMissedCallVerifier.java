@@ -29,8 +29,8 @@ import com.motict.sdk.exception.InvalidPhoneNumberException;
 import com.motict.sdk.exception.InvalidPinCodeException;
 import com.motict.sdk.exception.MaxAttemptExceededException;
 import com.motict.sdk.exception.MissingAuthTokenException;
+import com.motict.sdk.exception.PermissionDeniedException;
 import com.motict.sdk.exception.PinCodeVerificationNotStartedException;
-import com.motict.sdk.exception.RequiredPermissionDeniedException;
 import com.motict.sdk.exception.ServiceUnavailableException;
 import com.motict.sdk.listener.MissedCallVerificationCancelledListener;
 import com.motict.sdk.listener.MissedCallVerificationFailedListener;
@@ -111,7 +111,13 @@ public class MotictMissedCallVerifier implements RequestMissedCallOTPCallback, L
     public void startVerification(String phoneNumber) throws Exception {
         if (isAirplaneModeOn(context)) throw new AirplaneModeActiveException();
 
-        checkNecessaryPermissions();
+        try {
+            checkNecessaryPermissions();
+        } catch (PermissionDeniedException e) {
+            if (!e.getDeniedRequiredPermissions().isEmpty()) throw e;
+
+            if (!e.getDeniedOptionalPermissions().isEmpty()) logException(e);
+        }
 
 
         requestMissedCallOTPApi.execute(phoneNumber);
@@ -260,9 +266,16 @@ public class MotictMissedCallVerifier implements RequestMissedCallOTPCallback, L
                 e instanceof MaxAttemptExceededException ||
                 e instanceof MissingAuthTokenException ||
                 e instanceof PinCodeVerificationNotStartedException ||
-                e instanceof RequiredPermissionDeniedException ||
                 e instanceof ServiceUnavailableException
         ) return;
+
+        if (e instanceof PermissionDeniedException) {
+            if (!((PermissionDeniedException) e).getDeniedRequiredPermissions().isEmpty())
+                return;
+
+            if (((PermissionDeniedException) e).getDeniedOptionalPermissions().isEmpty())
+                return;
+        }
 
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter(sw);
@@ -328,7 +341,8 @@ public class MotictMissedCallVerifier implements RequestMissedCallOTPCallback, L
     }
 
     private void checkNecessaryPermissions() throws Exception {
-        List<String> permissions = new ArrayList<>();
+        List<String> requiredPermissions = new ArrayList<>();
+        List<String> optionalPermissions = new ArrayList<>();
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             if (ContextCompat.checkSelfPermission(
@@ -336,7 +350,7 @@ public class MotictMissedCallVerifier implements RequestMissedCallOTPCallback, L
                     Manifest.permission.ANSWER_PHONE_CALLS
             ) != PackageManager.PERMISSION_GRANTED
             )
-                permissions.add(Manifest.permission.ANSWER_PHONE_CALLS);
+                requiredPermissions.add(Manifest.permission.ANSWER_PHONE_CALLS);
         }
 
         if (ContextCompat.checkSelfPermission(
@@ -344,38 +358,39 @@ public class MotictMissedCallVerifier implements RequestMissedCallOTPCallback, L
                 Manifest.permission.CALL_PHONE
         ) != PackageManager.PERMISSION_GRANTED
         )
-            permissions.add(Manifest.permission.CALL_PHONE);
+            requiredPermissions.add(Manifest.permission.CALL_PHONE);
 
         if (ContextCompat.checkSelfPermission(
                 context,
                 Manifest.permission.READ_PHONE_STATE
         ) != PackageManager.PERMISSION_GRANTED
         )
-            permissions.add(Manifest.permission.READ_PHONE_STATE);
+            requiredPermissions.add(Manifest.permission.READ_PHONE_STATE);
 
         if (ContextCompat.checkSelfPermission(
                 context,
                 Manifest.permission.READ_CALL_LOG
         ) != PackageManager.PERMISSION_GRANTED
         )
-            permissions.add((Manifest.permission.READ_CALL_LOG));
+            requiredPermissions.add((Manifest.permission.READ_CALL_LOG));
 
         if (ContextCompat.checkSelfPermission(
                 context,
                 Manifest.permission.ACCESS_COARSE_LOCATION
         ) != PackageManager.PERMISSION_GRANTED
         )
-            permissions.add(Manifest.permission.ACCESS_COARSE_LOCATION);
+            optionalPermissions.add(Manifest.permission.ACCESS_COARSE_LOCATION);
 
         if (ContextCompat.checkSelfPermission(
                 context,
                 Manifest.permission.ACCESS_FINE_LOCATION
         ) != PackageManager.PERMISSION_GRANTED
         )
-            permissions.add(Manifest.permission.ACCESS_FINE_LOCATION);
+            optionalPermissions.add(Manifest.permission.ACCESS_FINE_LOCATION);
 
 
-        if (!permissions.isEmpty()) throw new RequiredPermissionDeniedException(permissions);
+        if (!requiredPermissions.isEmpty())
+            throw new PermissionDeniedException(requiredPermissions, optionalPermissions);
     }
 
 
