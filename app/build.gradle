@@ -53,6 +53,7 @@ dependencies {
 
     implementation 'br.com.simplepass:loading-button-android:2.2.0'
 
+
     implementation 'io.sentry:sentry-android:5.0.1'
 
 }
@@ -61,7 +62,7 @@ afterEvaluate {
     publishing {
         publications {
             release(MavenPublication) {
-                groupId = 'com.motict.sdk.app'
+                groupId = 'com.github.antonygunawan94.motict-android-sdk'
                 artifactId = 'app'
                 version = '1.0'
             }
