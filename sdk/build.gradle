@@ -54,6 +54,8 @@ afterEvaluate {
     publishing {
         publications {
             release(MavenPublication) {
+                from components.release
+
                 groupId = 'com.github.antonygunawan94.motict-android-sdk'
                 artifactId = 'sdk'
                 version = '1.0'
